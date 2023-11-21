@@ -1,0 +1,133 @@
+<?php
+
+namespace App\Services;
+
+use Illuminate\Http\Request;
+use App\Models\DummyModel;
+use App\Helpers\QueryHelper;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Response;
+use App\Http\Requests\DummyRequest;
+use App\Traits\ResponseFormatterTrait;
+use Validator;
+
+class DummyClass  
+{
+    use ResponseFormatterTrait;
+    private  $filterableColumns = [];
+    private  $searchableColumns = [];
+
+    /**
+    * Save new data
+    *
+    * @return \Illuminate\Http\JsonResponse
+    */
+    public function store(DummyRequest $request): JsonResponse
+    {
+        try {
+            $data = [
+                'name' => $request->name  ,
+                'details' => $request->details,
+            ];
+            DummyModel::create($data);
+            return $this->createdResponse('Successfully created.', $task->toArray());
+        } catch (\Exception $e) {
+            return $this->responseError($e->getMessage(),[], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+    * Update existing data
+    *
+    * @return \Illuminate\Http\JsonResponse
+    */
+    public function update($id, Request $request): JsonResponse
+    {
+        try {
+            $update = DummyModel::find($id);
+        
+            if(!$update){
+                return $this->responseError("Dummy does not exists.",[], Response::HTTP_NOT_FOUND );
+            }
+
+            $data = [
+                'name' => $request->name,
+            ];
+            $update->update($data);
+            
+            return $this->responseSuccess('Successfully updated.', $update->toArray());
+        } catch (\Exception $e) {
+            return $this->responseError($e->getMessage(),[], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }  
+    }
+
+    /**
+    * Delete existing data
+    *
+    * @return \Illuminate\Http\JsonResponse
+    */
+    public function destroy($id, Request $request): JsonResponse
+    {
+        try {
+            $validator = Validator::make(['id' => $id], [
+            'id' => 'required|integer',
+            ]);
+            if($validator->fails()){
+                return $this->failedValidation($validator);
+            }
+            $delete = DummyModel::find($id);
+            if($delete){
+                $delete->delete();
+            }else{
+                return $this->responseError("Dummy does not exists.",[], Response::HTTP_NOT_FOUND );
+            }
+
+            return $this->responseSuccess("Dummy successfully deleted.", []);
+        } catch (\Exception $e) {
+            return $this->responseError($e->getMessage(),[], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+    * Fetch specific data
+    *
+    * @return \Illuminate\Http\JsonResponse
+    */
+    public function show($id): JsonResponse
+    {
+        try {
+            $validator = Validator::make(['id' => $id], [
+            'id' => 'required|integer',
+            ]);
+            if($validator->fails()){
+                return $this->failedValidation($validator);
+            }
+            $data = DummyModel::find($id);
+            if(!$data){
+                return $this->responseError("Dummy does not exists.",[], Response::HTTP_NOT_FOUND );
+            }
+            return $this->responseSuccess('Success', $data->toArray());
+        } catch (\Exception $e) {
+            return $this->responseError($e->getMessage(),[], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+    * Fetch data list
+    *
+    * @return \Illuminate\Http\JsonResponse
+    */
+    public function fetch(Request $request): JsonResponse
+    {
+        try {
+            $query = DummyModel::query();
+            $query = QueryHelper::fetchQuery($query , $request , $this->searchableColumns , $this->filterableColumns);
+            $data = QueryHelper::getData($query , $request);
+
+            return $this->responseSuccess('Success', $data->toArray()); 
+        } catch (\Exception $e) {
+            return $this->responseError($e->getMessage(),[], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+}
